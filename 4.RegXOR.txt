@@ -1,0 +1,89 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Activation functions
+def sigmoid(x):
+    return 1 / (1 + np.exp(-x))
+def sigmoid_derivative(x):
+    return x * (1 - x)
+
+# XOR and XNOR data
+X = np.array([[0, 0],
+              [0, 1],
+              [1, 0],
+              [1, 1]])
+y_xor = np.array([[0], [1], [1], [0]])
+y_xnor = np.array([[1], [0], [0], [1]])
+
+# Train function
+def train_mlp(X, y, epochs=10000, lr=0.1):
+    np.random.seed(0)
+    w1 = np.random.randn(2, 2)
+    b1 = np.zeros((1, 2))
+    w2 = np.random.randn(2, 1)
+    b2 = np.zeros((1, 1))
+
+    for _ in range(epochs):
+        z1 = np.dot(X, w1) + b1
+        a1 = sigmoid(z1)
+        z2 = np.dot(a1, w2) + b2
+        output = sigmoid(z2)
+
+        error = output - y
+        d_output = error * sigmoid_derivative(output)
+
+        d_w2 = np.dot(a1.T, d_output)
+        d_b2 = np.sum(d_output, axis=0, keepdims=True)
+
+        d_hidden = np.dot(d_output, w2.T) * sigmoid_derivative(a1)
+        d_w1 = np.dot(X.T, d_hidden)
+        d_b1 = np.sum(d_hidden, axis=0, keepdims=True)
+
+        w1 -= lr * d_w1
+        b1 -= lr * d_b1
+        w2 -= lr * d_w2
+        b2 -= lr * d_b2
+
+    return w1, b1, w2, b2
+
+# Predict function
+def predict(X, w1, b1, w2, b2):
+    a1 = sigmoid(np.dot(X, w1) + b1)
+    return sigmoid(np.dot(a1, w2) + b2)
+
+# Plot with legend
+def plot_boundary(X, y_true, w1, b1, w2, b2, title):
+    x_min, x_max = -0.2, 1.2
+    y_min, y_max = -0.2, 1.2
+    xx, yy = np.meshgrid(np.linspace(x_min, x_max, 300),
+                         np.linspace(y_min, y_max, 300))
+    grid = np.c_[xx.ravel(), yy.ravel()]
+    probs = predict(grid, w1, b1, w2, b2).reshape(xx.shape)
+    binary_output = (probs > 0.5).astype(int)
+
+    plt.contour(xx, yy, binary_output, levels=[0.5], colors='red', linestyles='--', linewidths=2)
+    
+    # Plot each point with class color and label
+    for i in range(len(X)):
+        x1, x2 = X[i]
+        actual = int(y_true[i][0])
+        predicted = int(predict(np.array([[x1, x2]]), w1, b1, w2, b2)[0][0] > 0.5)
+        color = 'blue' if actual == 0 else 'red'
+        plt.scatter(x1, x2, color=color, edgecolors='k', s=100, label=f"Class {actual}" if i < 2 else "")
+        plt.text(x1 + 0.02, x2 + 0.02, f"A:{actual}, P:{predicted}", fontsize=9)
+
+    plt.title(title)
+    plt.xlabel('x1')
+    plt.ylabel('x2')
+    plt.grid(True)
+    plt.legend(loc="upper center")
+    plt.show()
+
+
+# Train models
+w1_xor, b1_xor, w2_xor, b2_xor = train_mlp(X, y_xor)
+w1_xnor, b1_xnor, w2_xnor, b2_xnor = train_mlp(X, y_xnor)
+
+# Plot with legends
+plot_boundary(X, y_xor, w1_xor, b1_xor, w2_xor, b2_xor, "MLP Decision Boundary - XOR")
+plot_boundary(X, y_xnor, w1_xnor, b1_xnor, w2_xnor, b2_xnor, "MLP Decision Boundary - XNOR")

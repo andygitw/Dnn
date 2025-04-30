@@ -1,0 +1,43 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+
+def polynomial_curve_fitting(x,y,poly_degree,noise_std):
+    noise=np.random.normal(0,noise_std,len(y))
+    y_noise=y+noise
+    coeff=np.polyfit(x,y_noise,poly_degree)
+    poly=np.poly1d(coeff)
+    return poly,y_noise
+def make_plots(x,y_noise,poly):
+    plt.scatter(x,y_noise)
+    plt.show()
+    plt.scatter(x,y_noise)
+    x_line=np.linspace(min(x),max(x),100)
+    plt.plot(x_line,poly(x_line),color='r')
+    plt.grid()
+    plt.show()
+def make_prediction(x_new,poly):
+    predicted_val=poly(x_new)
+    return predicted_val
+
+
+df=sns.load_dataset('tips')
+
+
+df.head()
+
+
+x=df['total_bill']
+y=df['tip']
+poly,y_noise=polynomial_curve_fitting(x,y,5,3)
+for actual,noise in zip(y,y_noise):
+    print(f'Actual Value: {actual} and Value with noise: {noise}')
+
+
+make_plots(x,y_noise,poly)
+
+
+x_new=10
+print(make_prediction(x_new,poly))

@@ -1,0 +1,56 @@
+import tensorflow as tf
+from sklearn import datasets
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
+from tensorflow.keras.utils import to_categorical
+
+# Load the Wine Dataset
+wine = datasets.load_wine()
+X = wine.data
+y = wine.target
+
+# Preprocess the Data
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+y_encoded = to_categorical(y, 3)
+
+X_train, X_test, y_train, y_test = train_test_split(X_scaled, y_encoded, test_size=0.3, random_state=42)
+
+# Build the Model
+model = Sequential()
+model.add(Dense(16, input_dim=13, activation='relu'))  # Layer 1
+model.add(Dense(16, activation='relu'))                # Layer 2
+model.add(Dense(3, activation='softmax'))              # Output Layer
+
+# Compile the Model
+model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+
+# Custom Callback
+class PrintEpochDetails(tf.keras.callbacks.Callback):
+    def on_epoch_end(self, epoch, logs=None):
+        if epoch % 1 == 0:
+            weights = self.model.get_weights()
+            w1, b1 = weights[0], weights[1]  # Layer 1
+            w2, b2 = weights[2], weights[3]  # Layer 2
+            w3, b3 = weights[4], weights[5]  # Output Layer
+
+            loss = logs['loss']
+            error_sample = X_train[epoch % len(X_train)]
+
+            print(f"\nEpoch {epoch}")
+            print(f"Old Weights: w1 = {w1.flatten()[:4]}, w2 = {w2.flatten()[:4]}")
+            print(f"Old Biases: b1 = {b1.flatten()[:4]}, b2 = {b2.flatten()[:4]}")
+            print(f"Loss: {loss:.4f}")
+            print(f"Error sample: {error_sample[:5]}")
+            print(f"New Weights: w1 = {w1.flatten()[:4]}, w2 = {w2.flatten()[:4]}")
+            print(f"New Biases: b1 = {b1.flatten()[:4]}, b2 = {b2.flatten()[:4]}\n")
+
+# Train the Model
+model.fit(X_train, y_train, epochs=10, batch_size=10, validation_data=(X_test, y_test), callbacks=[PrintEpochDetails()])
+
+# Evaluate the Model
+loss, accuracy = model.evaluate(X_test, y_test)
+print(f"\nTraining Accuracy: {accuracy*100:.2f}%")
+print(f"Test Accuracy: {accuracy*100:.2f}%")

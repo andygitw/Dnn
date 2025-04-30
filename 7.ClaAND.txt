@@ -1,0 +1,89 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Sigmoid activation function and its derivative
+def sigmoid(x):
+    return 1 / (1 + np.exp(-x))
+def sigmoid_derivative(x):
+    return x * (1 - x)
+
+# AND and NAND truth tables
+X = np.array([[0, 0],
+              [0, 1],
+              [1, 0],
+              [1, 1]])
+y_and = np.array([[0], [0], [0], [1]])
+y_nand = np.array([[1], [1], [1], [0]])
+
+# Train MLP for classification
+def train_mlp(X, y, epochs=10000, lr=0.1):
+    np.random.seed(0)
+    w1 = np.random.randn(2, 2)
+    b1 = np.zeros((1, 2))
+    w2 = np.random.randn(2, 1)
+    b2 = np.zeros((1, 1))
+
+    for _ in range(epochs):
+        z1 = np.dot(X, w1) + b1
+        a1 = sigmoid(z1)
+        z2 = np.dot(a1, w2) + b2
+        output = sigmoid(z2)
+
+        error = output - y
+        d_output = error * sigmoid_derivative(output)
+
+        d_w2 = np.dot(a1.T, d_output)
+        d_b2 = np.sum(d_output, axis=0, keepdims=True)
+
+        d_hidden = np.dot(d_output, w2.T) * sigmoid_derivative(a1)
+        d_w1 = np.dot(X.T, d_hidden)
+        d_b1 = np.sum(d_hidden, axis=0, keepdims=True)
+
+        w1 -= lr * d_w1
+        b1 -= lr * d_b1
+        w2 -= lr * d_w2
+        b2 -= lr * d_b2
+
+    return w1, b1, w2, b2
+
+# Prediction function
+def predict(X, w1, b1, w2, b2):
+    a1 = sigmoid(np.dot(X, w1) + b1)
+    return sigmoid(np.dot(a1, w2) + b2)
+
+# Plot function with decision boundary
+def plot_classification(X, y_true, w1, b1, w2, b2, title):
+    x_min, x_max = -0.2, 1.2
+    y_min, y_max = -0.2, 1.2
+    xx, yy = np.meshgrid(np.linspace(x_min, x_max, 300),
+                         np.linspace(y_min, y_max, 300))
+    grid = np.c_[xx.ravel(), yy.ravel()]
+    preds = predict(grid, w1, b1, w2, b2).reshape(xx.shape)
+
+    plt.contour(xx, yy, preds, levels=[0.5], colors='green', linestyles='--', linewidths=2)
+
+    for i in range(len(X)):
+        x1, x2 = X[i]
+        actual = int(y_true[i][0])
+        pred_prob = predict(np.array([[x1, x2]]), w1, b1, w2, b2)[0][0]
+        predicted = int(pred_prob > 0.5)
+        color = 'red' if actual == 1 else 'blue'
+        plt.scatter(x1 + x2*0.05, x2 + x1*0.05, color=color, edgecolors='k', s=120)
+        plt.text(x1 + 0.05, x2 + 0.05, f"A:{actual}, P:{predicted}", fontsize=9)
+
+    plt.title(title)
+    plt.xlabel("x1")
+    plt.ylabel("x2")
+    plt.grid(True)
+    plt.xlim(x_min, x_max)
+    plt.ylim(y_min, y_max)
+    plt.legend([ "Blue: Class 0", "Red: Class 1"], loc="upper center")
+    plt.show()
+
+# Train and plot for AND
+w1_and, b1_and, w2_and, b2_and = train_mlp(X, y_and)
+plot_classification(X, y_and, w1_and, b1_and, w2_and, b2_and, "MLP Classification on AND")
+
+# Train and plot for NAND
+w1_nand, b1_nand, w2_nand, b2_nand = train_mlp(X, y_nand)
+plot_classification(X, y_nand, w1_nand, b1_nand, w2_nand, b2_nand, "MLP Classification on NAND")

@@ -1,0 +1,47 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+
+def polynomial_curve_fitting(x, y, poly_degree):
+    coeff = np.polyfit(x, y, poly_degree)
+    poly = np.poly1d(coeff)
+    return poly
+
+def make_plots(x, y, poly):
+    plt.figure(figsize=(8, 5))
+    plt.scatter(x, y, label='Data Points')
+    x_line = np.linspace(min(x), max(x), 100)
+    plt.plot(x_line, poly(x_line), color='red', label='Polynomial Fit')
+    plt.xlabel('Flipper Length (mm)')
+    plt.ylabel('Body Mass (g)')
+    plt.title('Polynomial Curve Fitting on Penguins Dataset')
+    plt.grid(True)
+    plt.legend()
+    plt.show()
+
+def make_prediction(x_new, poly):
+    predicted_val = poly(x_new)
+    return predicted_val
+
+
+# Load the penguins dataset
+df = sns.load_dataset('penguins')
+
+# Drop rows with missing values (to avoid errors)
+df = df.dropna()
+
+# Use flipper_length_mm to predict body_mass_g
+x = df['flipper_length_mm']
+y = df['body_mass_g']
+
+# Fit a 3rd-degree polynomial (you can change to 5 if needed)
+poly = polynomial_curve_fitting(x, y, 3)
+
+# Plot data and fitted polynomial
+make_plots(x, y, poly)
+
+# Predict body mass for a penguin with 200mm flipper length
+x_new = 200
+print(f'Prediction of Body Mass for flipper length {x_new} mm is: {make_prediction(x_new, poly):.2f} g')

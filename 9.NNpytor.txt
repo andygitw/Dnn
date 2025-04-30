@@ -1,0 +1,84 @@
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
+from sklearn import datasets
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.utils import shuffle
+import numpy as np
+
+# Load Wine Dataset
+wine = datasets.load_wine()
+X = wine.data
+y = wine.target
+
+# Standardize features
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+# Convert to tensors
+X_tensor = torch.tensor(X_scaled, dtype=torch.float32)
+y_tensor = torch.tensor(y, dtype=torch.long)
+
+# Train-test split
+X_train, X_test, y_train, y_test = train_test_split(X_tensor, y_tensor, test_size=0.3, random_state=42)
+
+# Define Neural Network Model
+class WineNN(nn.Module):
+    def __init__(self):
+        super(WineNN, self).__init__()
+        self.fc1 = nn.Linear(13, 16)
+        self.fc2 = nn.Linear(16, 16)
+        self.fc3 = nn.Linear(16, 3)
+
+    def forward(self, x):
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        return self.fc3(x)
+
+model = WineNN()
+criterion = nn.CrossEntropyLoss()
+optimizer = optim.Adam(model.parameters(), lr=0.01)
+
+# Training Loop
+epochs = 10
+for epoch in range(epochs):
+    model.train()
+    
+    # Forward pass
+    outputs = model(X_train)
+    loss = criterion(outputs, y_train)
+
+    # Backward and optimize
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
+
+    # Print details every 1000 epochs
+    if epoch % 1 == 0:
+        with torch.no_grad():
+            weights = [param.data.clone() for param in model.parameters()]
+            w1, b1 = weights[0], weights[1]
+            w2, b2 = weights[2], weights[3]
+            w3, b3 = weights[4], weights[5]
+            
+            error_sample = X_train[epoch % len(X_train)]
+
+            print(f"\nEpoch {epoch}")
+            print(f"Old Weights: w1 = {w1.view(-1)[:4].numpy()}, w2 = {w2.view(-1)[:4].numpy()}")
+            print(f"Old Biases: b1 = {b1.view(-1)[:4].numpy()}, b2 = {b2.view(-1)[:4].numpy()}")
+            print(f"Loss: {loss.item():.4f}")
+            print(f"Error sample: {error_sample[:5].numpy()}")
+            print(f"New Weights: w1 = {w1.view(-1)[:4].numpy()}, w2 = {w2.view(-1)[:4].numpy()}")
+            print(f"New Biases: b1 = {b1.view(-1)[:4].numpy()}, b2 = {b2.view(-1)[:4].numpy()}\n")
+
+# Evaluation
+model.eval()
+with torch.no_grad():
+    test_outputs = model(X_test)
+    _, predicted = torch.max(test_outputs, 1)
+    accuracy = (predicted == y_test).sum().item() / len(y_test)
+
+print(f"\nTraining Accuracy: {accuracy * 100:.2f}%")
+print(f"Test Accuracy: {accuracy * 100:.2f}%")

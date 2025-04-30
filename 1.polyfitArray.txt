@@ -1,0 +1,27 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+
+def polynomial_curve_fitting(x,y,degree):
+    coeffs=np.polyfit(x,y,degree)
+    poly=np.poly1d(coeffs)
+    return poly
+def make_plots(x,y,poly):
+    plt.scatter(x,y)
+    plt.show()
+    plt.scatter(x,y)
+    x_line=np.linspace(min(x),max(x),100)
+    plt.plot(x_line,poly(x_line),color='red')
+    plt.show()
+def predicitons(x_new,poly):
+    return poly(x_new)
+
+
+x=np.array([1,2,3,4,5,6])
+y=np.array([4,8,13,19,39,50])
+poly=polynomial_curve_fitting(x,y,3)
+make_plots(x,y,poly)
+
+
+x_new=7
+print(f"The predicted value for {x_new} is: {predicitons(x_new,poly)}")
